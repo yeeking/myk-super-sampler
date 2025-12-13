@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sampler</title>
+  <style>
+    :root {
+      --bg: #f1f2f5;
+      --panel: #e0e2e6;
+      --panel-stroke: #c6c8cc;
+      --accent: #556070;
+      --text: #1b1c1f;
+      --muted: #6c7078;
+      --button: #d8dbe0;
+      --button-stroke: #a6a9af;
+      --wave: #424751;
+      --shadow: rgba(0, 0, 0, 0.1);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: "Segoe UI", "SF Pro Display", "Helvetica Neue", Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      padding: 20px 24px 32px;
+      user-select: none;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .app {
+      max-width: 880px;
+      margin: 0 auto;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 22px;
+    }
+
+    h1 {
+      letter-spacing: 0.8px;
+      font-weight: 700;
+      font-size: 28px;
+    }
+
+    .add-btn {
+      background: var(--button);
+      border: 2px solid var(--button-stroke);
+      border-radius: 10px;
+      padding: 12px 20px;
+      font-weight: 600;
+      letter-spacing: 0.6px;
+      cursor: pointer;
+      color: var(--text);
+      box-shadow: 0 1px 2px var(--shadow);
+      transition: transform 120ms ease, box-shadow 120ms ease;
+    }
+
+    .add-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 14px var(--shadow);
+    }
+
+    .players {
+      display: grid;
+      gap: 18px;
+    }
+
+    .player {
+      background: var(--panel);
+      border: 2px solid var(--panel-stroke);
+      border-radius: 14px;
+      padding: 14px 16px;
+      display: grid;
+      grid-template-columns: 200px 1fr 120px;
+      column-gap: 16px;
+      box-shadow: 0 2px 8px var(--shadow);
+    }
+
+    .controls {
+      display: grid;
+      grid-template-columns: 1fr 70px 2fr;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .button-stack {
+      display: grid;
+      gap: 10px;
+    }
+
+    .trigger-btn {
+      height: 100%;
+      border: 2px solid var(--button-stroke);
+      border-radius: 10px;
+      background: linear-gradient(180deg, #dfe2e7, #cfd3d9);
+      font-weight: 800;
+      letter-spacing: 0.4px;
+      color: var(--text);
+      box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.6), 0 3px 8px var(--shadow);
+      cursor: pointer;
+      transition: transform 120ms ease, box-shadow 120ms ease;
+    }
+
+    .trigger-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 8px 14px var(--shadow);
+    }
+
+    .trigger-btn:active {
+      transform: translateY(0);
+      box-shadow: 0 3px 6px var(--shadow);
+    }
+    .pill-btn {
+      background: var(--button);
+      border: 2px solid var(--button-stroke);
+      border-radius: 8px;
+      font-weight: 700;
+      padding: 10px 12px;
+      text-align: center;
+      letter-spacing: 0.4px;
+      cursor: pointer;
+      transition: transform 120ms ease, box-shadow 120ms ease;
+      box-shadow: 0 2px 4px var(--shadow);
+    }
+
+    .pill-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 8px 12px var(--shadow);
+    }
+
+    .waveform {
+      position: relative;
+      background: linear-gradient(180deg, #ededf2, #d8dbe1);
+      border: 2px solid var(--panel-stroke);
+      border-radius: 10px;
+      padding: 10px 12px;
+      height: 86px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    .waveform svg {
+      width: 100%;
+      height: 64px;
+    }
+
+    .status {
+      position: absolute;
+      right: 12px;
+      bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      color: var(--muted);
+      font-weight: 700;
+      text-transform: lowercase;
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #2f343d;
+      box-shadow: 0 0 0 4px rgba(68, 73, 80, 0.18);
+    }
+
+    .file-label {
+      position: absolute;
+      left: 12px;
+      bottom: 8px;
+      font-size: 13px;
+      color: var(--muted);
+      font-weight: 700;
+      max-width: 70%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .range,
+    .gain {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      align-self: center;
+    }
+
+    .label {
+      font-size: 13px;
+      letter-spacing: 0.6px;
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    .range-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      background: #d9dce1;
+      border: 2px solid #aaafb5;
+      border-radius: 10px;
+      padding: 8px 12px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      color: var(--text);
+      box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.08), 0 2px 5px var(--shadow);
+    }
+
+    .arrow {
+      opacity: 0.6;
+      font-size: 12px;
+    }
+
+    .num-input {
+      width: 64px;
+      padding: 6px 8px;
+      border-radius: 6px;
+      border: 1px solid #a9adb2;
+      background: #f3f4f7;
+      font-weight: 700;
+      text-align: center;
+      color: var(--text);
+      -moz-appearance: textfield;
+    }
+
+    .num-input:focus {
+      outline: 2px solid #92a0b2;
+    }
+
+    .num-input::-webkit-outer-spin-button,
+    .num-input::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+
+    .gain-row {
+      display: grid;
+      grid-template-columns: 64px 1fr;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .knob {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      background: linear-gradient(145deg, #f9fafc, #cdd0d6);
+      border: 2px solid #b0b3b9;
+      box-shadow: inset 0 8px 12px rgba(255, 255, 255, 0.4), 0 3px 10px var(--shadow);
+      position: relative;
+    }
+
+    .knob::after {
+      content: "";
+      position: absolute;
+      width: 6px;
+      height: 18px;
+      background: var(--accent);
+      border-radius: 4px;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%) rotate(-30deg);
+      transform-origin: center 16px;
+    }
+
+    .meter {
+      height: 74px;
+      background: linear-gradient(180deg, #d2d5da, #c3c6cc);
+      border: 2px solid #b2b5bc;
+      border-radius: 8px;
+      padding: 6px;
+      display: flex;
+      align-items: flex-end;
+      box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.15);
+    }
+
+    .meter .fill {
+      width: 100%;
+      height: 32%;
+      background: linear-gradient(180deg, #6b727f, #3f4551);
+      border-radius: 4px;
+    }
+
+    .status.idle .dot {
+      background: #838894;
+      box-shadow: 0 0 0 2px rgba(131, 136, 148, 0.2);
+    }
+
+    .status.playing .dot {
+      background: #2d313a;
+      box-shadow: 0 0 0 4px rgba(45, 49, 58, 0.25);
+    }
+
+    .status.loaded .dot {
+      background: #2f934b;
+      box-shadow: 0 0 0 4px rgba(47, 147, 75, 0.22);
+      color: #2f934b;
+    }
+
+    .status.recording .dot {
+      background: #c43b4d;
+      box-shadow: 0 0 0 4px rgba(196, 59, 77, 0.24);
+      color: #c43b4d;
+    }
+
+    @media (max-width: 860px) {
+      .player {
+        grid-template-columns: 1fr;
+        row-gap: 14px;
+      }
+
+      .controls {
+        grid-template-columns: 160px 1fr;
+      }
+
+      .gain-row {
+        grid-template-columns: 64px 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <h1>SAMPLER</h1>
+      <button class="add-btn">ADD SAMPLE PLAYER</button>
+    </header>
+
+    <main class="players" id="players"></main>
+  </div>
+
+  <script>
+    const state = { players: [] };
+
+    const playersEl = document.getElementById("players");
+    const addBtn = document.querySelector(".add-btn");
+
+    addBtn?.addEventListener("click", async () => {
+      try {
+        await fetch("/addSamplePlayer", { method: "POST" });
+        console.log('addButton called addSamplePlayer')
+      } catch (err) {
+        console.error("Failed to add sample player", err);
+      }
+    });
+
+    function renderPlayers() {
+      playersEl.innerHTML = "";
+
+      if (!state.players.length) {
+        const empty = document.createElement("div");
+        empty.textContent = "No sample players yet. Click \"Add Sample Player\" to begin.";
+        empty.style.color = "var(--muted)";
+        empty.style.fontWeight = "600";
+        empty.style.padding = "8px 4px";
+        playersEl.appendChild(empty);
+        return;
+      }
+
+      state.players.forEach((p) => {
+        const section = document.createElement("section");
+        section.className = "player";
+        section.innerHTML = `
+          <div class="controls">
+            <div class="button-stack">
+              <button class="pill-btn load-btn" data-id="${p.id}">LOAD</button>
+              <button class="pill-btn" data-action="record" data-id="${p.id}">REC...</button>
+            </div>
+            <button class="trigger-btn" data-id="${p.id}">▶</button>
+            <div class="waveform">
+              <svg viewBox="0 0 200 80" aria-hidden="true">
+                <path d="M2 40 L10 44 L18 36 L26 46 L34 30 L42 52 L50 38 L58 44 L66 26 L74 52 L82 40 L90 46 L98 34 L106 54 L114 36 L122 48 L130 28 L138 50 L146 42 L154 46 L162 34 L170 52 L178 40 L186 44 L198 40" fill="none" stroke="var(--wave)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+              <div class="status ${p.status === "loaded" ? "loaded" : p.isPlaying ? "playing" : "idle"}">
+                <span class="dot"></span>
+                <span>${p.status || (p.isPlaying ? "playing" : "idle")}</span>
+              </div>
+              <div class="file-label">${p.fileName || "No file loaded"}</div>
+            </div>
+          </div>
+          <div class="range">
+            <span class="label">MIDI NOTE RANGE</span>
+            <div class="range-pill">
+              <input type="number" min="0" max="127" class="num-input start-note" value="${p.midiLow}">
+              <span class="arrow">▶</span>
+              <input type="number" min="0" max="127" class="num-input end-note" value="${p.midiHigh}">
+            </div>
+          </div>
+          <div class="gain">
+            <span class="label">GAIN</span>
+            <div class="gain-row">
+              <div class="knob" aria-hidden="true"></div>
+              <div class="meter">
+                <div class="fill" style="height: ${Math.min(100, Math.max(4, p.gain * 100))}%"></div>
+              </div>
+            </div>
+          </div>
+        `;
+
+          playersEl.appendChild(section);
+      });
+
+      playersEl.querySelectorAll(".load-btn").forEach((btn) => {
+        btn.addEventListener("click", async (e) => {
+          const id = e.currentTarget.getAttribute("data-id");
+          try {
+            await fetch(`/loadSample?id=${id}`, { method: "POST" });
+          } catch (err) {
+            console.error("Load request failed", err);
+          }
+        });
+      });
+
+      playersEl.querySelectorAll(".trigger-btn").forEach((btn) => {
+        btn.addEventListener("click", async (e) => {
+          const id = e.currentTarget.getAttribute("data-id");
+          try {
+            await fetch(`/trigger?id=${id}`, { method: "POST" });
+          } catch (err) {
+            console.error("Trigger request failed", err);
+          }
+        });
+      });
+
+      playersEl.querySelectorAll(".range-pill").forEach((pill) => {
+        const start = pill.querySelector(".start-note");
+        const end = pill.querySelector(".end-note");
+        const playerId = pill.closest(".player")?.querySelector(".load-btn")?.getAttribute("data-id");
+
+        const clamp = (v) => Math.min(127, Math.max(0, v));
+
+        const pushUpdate = async (low, high) => {
+          try {
+            await fetch(`/setRange?id=${playerId}&low=${low}&high=${high}`, { method: "POST" });
+          } catch (err) {
+            console.error("Failed to set range", err);
+          }
+        };
+
+        const commit = () => {
+          let low = clamp(parseInt(start.value, 10) || 0);
+          let high = clamp(parseInt(end.value, 10) || 0);
+          if (low > high) high = low;
+          if (high < low) low = high;
+          start.value = low;
+          end.value = high;
+          pushUpdate(low, high);
+        };
+
+        const maybeCommitOnEnter = (ev) => {
+          if (ev.key === "Enter") {
+            ev.preventDefault();
+            ev.currentTarget.blur();
+          }
+        };
+
+        start?.addEventListener("blur", commit);
+        end?.addEventListener("blur", commit);
+        start?.addEventListener("keydown", maybeCommitOnEnter);
+        end?.addEventListener("keydown", maybeCommitOnEnter);
+      });
+    }
+
+    function handleCppMessage(data) {
+      try {
+        if (data?.players) {
+          state.players = data.players;
+          renderPlayers();
+        } else if (data?.msg) {
+          console.log("Message from backend:", data.msg);
+        }
+      } catch (err) {
+        console.error("Failed to handle message", err);
+      } finally {
+        if (window.__JUCE__?.emitResult) {
+          window.__JUCE__.emitResult("ok");
+        }
+      }
+    }
+
+    async function fetchInitialState() {
+      try {
+        const res = await fetch("/state");
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const json = await res.json();
+        handleCppMessage(json);
+      } catch (err) {
+        console.error("Failed to fetch initial state", err);
+        renderPlayers();
+      }
+    }
+
+    fetchInitialState();
+  </script>
+</body>
+</html>

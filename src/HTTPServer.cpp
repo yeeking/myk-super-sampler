@@ -11,10 +11,10 @@ HttpServerThread::HttpServerThread(PluginProcessor& _pluginProc)  :
 
 void HttpServerThread::initAPI()
 {
-    svr.set_logger([](const httplib::Request& req, const httplib::Response& res) {
-        DBG("HttpServerThread::log " << req.method << " " << req.path 
-                  << " -> " << res.status);
-    });
+    // svr.set_logger([](const httplib::Request& req, const httplib::Response& res) {
+    //     DBG("HttpServerThread::log " << req.method << " " << req.path 
+    //               << " -> " << res.status);
+    // });
 
     for (int i = 0; i < BinaryData::namedResourceListSize; ++i)
     {
@@ -101,6 +101,34 @@ void HttpServerThread::initAPI()
         auto state = pluginProc.getSamplerState();
         const auto json = juce::JSON::toString (state).toStdString();
         res.set_content (json, "application/json");
+    });
+
+    svr.Get("/waveform", [this](const httplib::Request& req, httplib::Response& res) {
+        auto idIt = req.params.find ("id");
+        if (idIt == req.params.end())
+        {
+            res.status = 400;
+            res.set_content("{\"status\":\"error\",\"message\":\"missing id\"}", "application/json");
+            return;
+        }
+
+        try
+        {
+            int id = std::stoi (idIt->second);
+            const auto svg = pluginProc.getWaveformSVGForPlayer (id);
+            res.set_content (svg.toStdString(), "image/svg+xml");
+        }
+        catch (const std::exception&)
+        {
+            res.status = 400;
+            res.set_content("{\"status\":\"error\",\"message\":\"invalid id\"}", "application/json");
+        }
+    });
+
+    svr.Get("/vuState", [this](const httplib::Request& req, httplib::Response& res) {
+        juce::ignoreUnused (req);
+        const auto jsonStr = pluginProc.getVuStateJson();
+        res.set_content (jsonStr, "application/json");
     });
 
     svr.Post("/setRange", [this](const httplib::Request& req, httplib::Response& res) {

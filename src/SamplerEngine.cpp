@@ -1,8 +1,11 @@
 #include "SamplerEngine.h"
+#include "WaveformSVGRenderer.h"
+#include <sstream>
 
 SamplerEngine::SamplerEngine()
 {
     formatManager.registerBasicFormats();
+    vuJson = "{\"dB_out\":[]}";
 }
 
 int SamplerEngine::addSamplePlayer()
@@ -30,6 +33,9 @@ void SamplerEngine::processBlock (juce::AudioBuffer<float>& buffer, const juce::
     }
 
     const std::lock_guard<std::mutex> lock (playerMutex);
+
+    for (auto& player : players)
+        player->beginBlock();
 
     buffer.clear();
     const int numChannels = buffer.getNumChannels();
@@ -59,6 +65,24 @@ void SamplerEngine::processBlock (juce::AudioBuffer<float>& buffer, const juce::
             buffer.addSample (ch, sample, acc);
         }
     }
+    for (auto& player : players)
+        player->endBlock();
+
+    std::ostringstream vuBuilder;
+    vuBuilder.setf (std::ios::fixed);
+    vuBuilder.precision (2);
+    vuBuilder << "{\"dB_out\":[";
+    for (size_t i = 0; i < players.size(); ++i)
+    {
+        if (i > 0)
+            vuBuilder << ',';
+        vuBuilder << players[i]->getLastVuDb();
+    }
+    vuBuilder << "]}";
+    {
+        const juce::SpinLock::ScopedLockType guard (vuLock);
+        vuJson = vuBuilder.str();
+    }
 }
 
 juce::var SamplerEngine::toVar() const
@@ -78,6 +102,7 @@ juce::var SamplerEngine::toVar() const
         obj->setProperty ("status", st.status);
         obj->setProperty ("fileName", st.fileName);
         obj->setProperty ("filePath", st.filePath);
+        obj->setProperty ("waveformSVG", st.waveformSVG);
         arr.add (juce::var (obj));
     }
 
@@ -137,7 +162,7 @@ bool SamplerEngine::loadSampleInternal (int playerId, const juce::File& file, ju
     if (auto* player = getPlayer (playerId))
     {
         player->setFilePathAndStatus (file.getFullPathName(), "loading", file.getFileName());
-        player->setLoadedBuffer (std::move (tempBuffer), file.getFullPathName());
+        player->setLoadedBuffer (std::move (tempBuffer), file.getFileName());
         return true;
     }
 
@@ -186,6 +211,21 @@ bool SamplerEngine::trigger (int playerId)
         return true;
     }
     return false;
+}
+
+juce::String SamplerEngine::getWaveformSVG (int playerId) const
+{
+    const std::lock_guard<std::mutex> lock (playerMutex);
+    if (auto* player = getPlayer (playerId))
+        return player->getWaveformSVG();
+
+    return WaveformSVGRenderer::generateBlankWaveformSVG();
+}
+
+std::shared_ptr<std::string> SamplerEngine::getVuJson() const
+{
+    const juce::SpinLock::ScopedLockType guard (vuLock);
+    return std::make_shared<std::string>(vuJson);
 }
 
 juce::ValueTree SamplerEngine::exportToValueTree() const

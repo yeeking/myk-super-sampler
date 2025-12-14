@@ -225,7 +225,7 @@ void PluginProcessor::addSamplePlayerFromWeb()
 void PluginProcessor::requestSampleLoadFromWeb (int playerId)
 {
     auto chooser = std::make_shared<juce::FileChooser> ("Select an audio file",
-                                                        juce::File(),
+                                                        lastSampleDirectory,
                                                         "*.wav;*.aif;*.aiff;*.mp3;*.flac;*.ogg;*.*");
 
     auto chooserFlags = juce::FileBrowserComponent::openMode
@@ -242,6 +242,8 @@ void PluginProcessor::requestSampleLoadFromWeb (int playerId)
             broadcastMessage ("Load cancelled");
             return;
         }
+
+        lastSampleDirectory = file.getParentDirectory();
 
         sampler.loadSampleAsync (playerId, file, [this] (bool ok, juce::String error)
         {
@@ -263,14 +265,12 @@ void PluginProcessor::setSampleRangeFromWeb (int playerId, int low, int high)
 
 void PluginProcessor::triggerFromWeb (int playerId)
 {
-    if (sampler.trigger (playerId))
-        sendSamplerStateToUI();
-    else
-        broadcastMessage ("Failed to trigger player " + juce::String (playerId));
+    sampler.trigger(playerId);
 }
 
 void PluginProcessor::sendSamplerStateToUI()
 {
+    DBG("sendSamplerStateToUI");
     auto payload = sampler.toVar();
     juce::MessageManager::callAsync ([this, payload]()
     {
@@ -282,6 +282,20 @@ void PluginProcessor::sendSamplerStateToUI()
 juce::var PluginProcessor::getSamplerState() const
 {
     return sampler.toVar();
+}
+
+juce::String PluginProcessor::getWaveformSVGForPlayer (int playerId) const
+{
+    return sampler.getWaveformSVG (playerId);
+}
+
+std::string PluginProcessor::getVuStateJson() const
+{
+    auto ptr = sampler.getVuJson();
+    if (ptr != nullptr)
+        return *ptr;
+
+    return "{\"dB_out\":[]}";
 }
 
 void PluginProcessor::broadcastMessage (const juce::String& msg)

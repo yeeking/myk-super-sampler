@@ -1,6 +1,7 @@
 #pragma once
 
 #include <JuceHeader.h>
+#include <vector>
 
 // A lightweight sample player placeholder that will later own audio data.
 class SamplePlayer
@@ -16,6 +17,7 @@ public:
         juce::String status { "empty" };
         juce::String fileName;
         juce::String filePath;
+        juce::String waveformSVG;
     };
 
     explicit SamplePlayer (int newId);
@@ -34,9 +36,20 @@ public:
 
     bool setLoadedBuffer (juce::AudioBuffer<float>&& newBuffer, const juce::String& name);
     void markError (const juce::String& path, const juce::String& message);
+    juce::String getWaveformSVG() const noexcept { return state.waveformSVG; }
+    void beginBlock() noexcept;
+    void endBlock() noexcept;
+    float getLastVuDb() const noexcept { return lastVuDb; }
 
 private:
+    void pushVuSample (float sample) noexcept;
+
     State state;
     juce::AudioBuffer<float> sampleBuffer;
     int playHead { 0 };
+    std::vector<float> vuBuffer;
+    int vuWritePos { 0 };
+    float vuSum { 0.0f };
+    int vuBufferSize { 1024 };
+    float lastVuDb { -60.0f };
 };

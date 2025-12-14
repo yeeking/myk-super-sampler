@@ -34,7 +34,7 @@
     }
 
     .app {
-      max-width: 880px;
+      max-width: 1160px;
       margin: 0 auto;
     }
 
@@ -80,14 +80,14 @@
       border-radius: 14px;
       padding: 14px 16px;
       display: grid;
-      grid-template-columns: 200px 1fr 120px;
+      grid-template-columns: 520px 150px 120px;
       column-gap: 16px;
-      box-shadow: 0 2px 8px var(--shadow);
+      box-shadow: 0 1px 3px var(--shadow);
     }
 
     .controls {
       display: grid;
-      grid-template-columns: 1fr 70px 2fr;
+      grid-template-columns: 120px 70px 1fr;
       gap: 12px;
       align-items: center;
     }
@@ -97,7 +97,7 @@
       gap: 10px;
     }
 
-    .trigger-btn {
+     .trigger-btn {
       height: 100%;
       border: 2px solid var(--button-stroke);
       border-radius: 10px;
@@ -105,20 +105,17 @@
       font-weight: 800;
       letter-spacing: 0.4px;
       color: var(--text);
-      box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.6), 0 3px 8px var(--shadow);
       cursor: pointer;
-      transition: transform 120ms ease, box-shadow 120ms ease;
+      transition: transform 120ms ease;
     }
-
+/*
     .trigger-btn:hover {
       transform: translateY(-1px);
-      box-shadow: 0 8px 14px var(--shadow);
     }
-
+*/
     .trigger-btn:active {
       transform: translateY(0);
-      box-shadow: 0 3px 6px var(--shadow);
-    }
+    } 
     .pill-btn {
       background: var(--button);
       border: 2px solid var(--button-stroke);
@@ -139,20 +136,26 @@
 
     .waveform {
       position: relative;
-      background: linear-gradient(180deg, #ededf2, #d8dbe1);
+      background: #ebedf1;
       border: 2px solid var(--panel-stroke);
       border-radius: 10px;
       padding: 10px 12px;
-      height: 86px;
+      height: 112px;
       display: flex;
       align-items: center;
       justify-content: center;
       overflow: hidden;
     }
 
-    .waveform svg {
+    .wave-inner {
       width: 100%;
-      height: 64px;
+      height: 100%;
+    }
+
+    .wave-inner svg {
+      width: 100%;
+      height: 100%;
+      display: block;
     }
 
     .status {
@@ -211,7 +214,7 @@
       background: #d9dce1;
       border: 2px solid #aaafb5;
       border-radius: 10px;
-      padding: 8px 12px;
+      padding: 6px 10px;
       font-weight: 700;
       letter-spacing: 0.5px;
       color: var(--text);
@@ -224,7 +227,7 @@
     }
 
     .num-input {
-      width: 64px;
+      width: 56px;
       padding: 6px 8px;
       border-radius: 6px;
       border: 1px solid #a9adb2;
@@ -293,6 +296,62 @@
       border-radius: 4px;
     }
 
+    .vu {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .vu-meter {
+      position: relative;
+      width: 150px;
+      height: 126px;
+      background: #f2f4f8;
+      border: 2px solid #b5b9c2;
+      border-radius: 14px;
+      overflow: hidden;
+    }
+
+    .vu-face {
+      position: absolute;
+      inset: 12px 12px 18px 12px;
+      width: calc(100% - 24px);
+      height: calc(100% - 30px);
+    }
+
+    .vu-needle {
+      position: absolute;
+      width: 4px;
+      height: 74px;
+      background: linear-gradient(180deg, #1f232c, #3e4554);
+      bottom: 16px;
+      left: 50%;
+      transform-origin: 50% 90%;
+      transform: translate(-50%, 0) rotate(-110deg);
+      border-radius: 6px;
+      transition: none;
+      will-change: transform;
+    }
+
+    .vu-cap {
+      position: absolute;
+      width: 14px;
+      height: 14px;
+      background: #1e212a;
+      border: 2px solid #e1e3e8;
+      border-radius: 50%;
+      bottom: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+
+    .playing * {
+      transition: none !important;
+      box-shadow: none !important;
+    }
+
     .status.idle .dot {
       background: #838894;
       box-shadow: 0 0 0 2px rgba(131, 136, 148, 0.2);
@@ -343,9 +402,39 @@
 
   <script>
     const state = { players: [] };
+    const vuNeedles = new Map();
+    const playerEls = new Map();
+    const lastVuAngles = new Map();
+    const VU_MIN_DB = -20;
+    const VU_MAX_DB = 3;
 
     const playersEl = document.getElementById("players");
     const addBtn = document.querySelector(".add-btn");
+    let vuTimer = null;
+
+    function vuDbToDeg(db) {
+      const clamped = Math.max(VU_MIN_DB, Math.min(VU_MAX_DB, db));
+      const norm = (clamped - VU_MIN_DB) / (VU_MAX_DB - VU_MIN_DB);
+      return -110 + norm * 220;
+    }
+
+    function buildVuTicks() {
+      const stops = [-20, -15, -10, -7, -5, -3, -1, 0, 1, 2, 3];
+      const cx = 100;
+      const cy = 96;
+      const outer = 80;
+      const inner = 64;
+      return stops
+        .map((db) => {
+          const rad = (vuDbToDeg(db) * Math.PI) / 180;
+          const x1 = cx + Math.cos(rad) * outer;
+          const y1 = cy + Math.sin(rad) * outer;
+          const x2 = cx + Math.cos(rad) * inner;
+          const y2 = cy + Math.sin(rad) * inner;
+          return `<line x1="${x1.toFixed(2)}" y1="${y1.toFixed(2)}" x2="${x2.toFixed(2)}" y2="${y2.toFixed(2)}" />`;
+        })
+        .join("");
+    }
 
     addBtn?.addEventListener("click", async () => {
       try {
@@ -356,121 +445,169 @@
       }
     });
 
-    function renderPlayers() {
-      playersEl.innerHTML = "";
+    function createPlayerElement(p) {
+      const section = document.createElement("section");
+      section.className = "player";
+      const ticks = buildVuTicks();
+      section.innerHTML = `
+        <div class="controls">
+          <div class="button-stack">
+            <button class="pill-btn load-btn" data-id="${p.id}">LOAD</button>
+            <button class="pill-btn" data-action="record" data-id="${p.id}">REC...</button>
+          </div>
+          <button class="trigger-btn" data-id="${p.id}">▶</button>
+          <div class="waveform">
+            <div class="wave-inner"></div>
+            <div class="status idle">
+              <span class="dot"></span>
+              <span>idle</span>
+            </div>
+            <div class="file-label">${p.fileName || "No file loaded"}</div>
+          </div>
+        </div>
+        <div class="range">
+          <span class="label">MIDI NOTE RANGE</span>
+          <div class="range-pill">
+            <input type="number" min="0" max="127" class="num-input start-note">
+            <span class="arrow">▶</span>
+            <input type="number" min="0" max="127" class="num-input end-note">
+          </div>
+        </div>
+        <div class="vu">
+          <span class="label">VU METER</span>
+          <div class="vu-meter" data-id="${p.id}">
+            <svg class="vu-face" viewBox="0 0 200 120" aria-hidden="true">
+              <path d="M20 96 A80 80 0 0 1 180 96" fill="none" stroke="#2f343f" stroke-width="3" stroke-linecap="round" />
+              <path d="M120 96 A60 60 0 0 1 175 96" fill="none" stroke="#d54c3f" stroke-width="4" stroke-linecap="round" />
+              <g stroke="#2f343f" stroke-width="2" stroke-linecap="round">
+                ${ticks}
+              </g>
+              <text x="36" y="70" font-size="11" fill="#2f343f" font-weight="700">-20</text>
+              <text x="70" y="54" font-size="11" fill="#2f343f" font-weight="700">-10</text>
+              <text x="100" y="46" font-size="11" fill="#2f343f" font-weight="700">-5</text>
+              <text x="130" y="50" font-size="11" fill="#2f343f" font-weight="700">0</text>
+              <text x="154" y="62" font-size="11" fill="#2f343f" font-weight="700">+3</text>
+              <text x="90" y="82" font-size="12" fill="#2f343f" font-weight="800">VU</text>
+            </svg>
+            <div class="vu-needle"></div>
+            <div class="vu-cap"></div>
+          </div>
+        </div>
+      `;
 
+      const loadBtn = section.querySelector(".load-btn");
+      loadBtn?.addEventListener("click", async (e) => {
+        const id = e.currentTarget.getAttribute("data-id");
+        try { await fetch(`/loadSample?id=${id}`, { method: "POST" }); }
+        catch (err) { console.error("Load request failed", err); }
+      });
+
+      const trigBtn = section.querySelector(".trigger-btn");
+      trigBtn?.addEventListener("click", async (e) => {
+        const id = e.currentTarget.getAttribute("data-id");
+        try { await fetch(`/trigger?id=${id}`, { method: "POST" }); }
+        catch (err) { console.error("Trigger request failed", err); }
+      });
+
+      const start = section.querySelector(".start-note");
+      const end = section.querySelector(".end-note");
+      const clamp = (v) => Math.min(127, Math.max(0, v));
+      const commit = () => {
+        let low = clamp(parseInt(start.value, 10) || 0);
+        let high = clamp(parseInt(end.value, 10) || 0);
+        if (low > high) high = low;
+        if (high < low) low = high;
+        start.value = low;
+        end.value = high;
+        const id = p.id;
+        fetch(`/setRange?id=${id}&low=${low}&high=${high}`, { method: "POST" }).catch((err) => {
+          console.error("Failed to set range", err);
+        });
+      };
+      const maybeCommitOnEnter = (ev) => { if (ev.key === "Enter") { ev.preventDefault(); ev.currentTarget.blur(); } };
+      start?.addEventListener("blur", commit);
+      end?.addEventListener("blur", commit);
+      start?.addEventListener("keydown", maybeCommitOnEnter);
+      end?.addEventListener("keydown", maybeCommitOnEnter);
+
+      const refs = {
+        section,
+        statusEl: section.querySelector(".status"),
+        statusText: section.querySelector(".status span:last-child"),
+        fileLabel: section.querySelector(".file-label"),
+        wave: section.querySelector(".wave-inner"),
+        start,
+        end,
+        needle: section.querySelector(".vu-needle"),
+        waveSig: "",
+      };
+
+      vuNeedles.set(p.id, refs.needle);
+      return refs;
+    }
+
+    function updatePlayerElement(refs, p) {
+      const statusClass = p.status === "loaded" ? "loaded" : p.isPlaying ? "playing" : "idle";
+      const statusLabel = p.status || (p.isPlaying ? "playing" : "idle");
+      if (refs.statusEl) {
+        refs.statusEl.className = `status ${statusClass}`;
+        refs.statusText.textContent = statusLabel;
+      }
+      const desiredFile = p.fileName || "No file loaded";
+      if (refs.fileLabel && refs.fileLabel.textContent !== desiredFile)
+        refs.fileLabel.textContent = desiredFile;
+      if (refs.start && Number(refs.start.value) !== p.midiLow) refs.start.value = p.midiLow;
+      if (refs.end && Number(refs.end.value) !== p.midiHigh) refs.end.value = p.midiHigh;
+
+      if (refs.wave && p.waveformSVG && refs.waveSig !== p.waveformSVG) {
+        refs.wave.innerHTML = p.waveformSVG;
+        const svg = refs.wave.querySelector("svg");
+        if (svg) svg.setAttribute("preserveAspectRatio", "none");
+        refs.waveSig = p.waveformSVG;
+      }
+    }
+
+    function renderPlayers() {
       if (!state.players.length) {
+        playerEls.clear();
+        vuNeedles.clear();
+        lastVuAngles.clear();
+        playersEl.innerHTML = "";
         const empty = document.createElement("div");
         empty.textContent = "No sample players yet. Click \"Add Sample Player\" to begin.";
         empty.style.color = "var(--muted)";
         empty.style.fontWeight = "600";
         empty.style.padding = "8px 4px";
         playersEl.appendChild(empty);
+        document.body.classList.remove("playing");
         return;
       }
 
+      if (playerEls.size === 0) playersEl.innerHTML = "";
+
+      const seen = new Set();
       state.players.forEach((p) => {
-        const section = document.createElement("section");
-        section.className = "player";
-        section.innerHTML = `
-          <div class="controls">
-            <div class="button-stack">
-              <button class="pill-btn load-btn" data-id="${p.id}">LOAD</button>
-              <button class="pill-btn" data-action="record" data-id="${p.id}">REC...</button>
-            </div>
-            <button class="trigger-btn" data-id="${p.id}">▶</button>
-            <div class="waveform">
-              <svg viewBox="0 0 200 80" aria-hidden="true">
-                <path d="M2 40 L10 44 L18 36 L26 46 L34 30 L42 52 L50 38 L58 44 L66 26 L74 52 L82 40 L90 46 L98 34 L106 54 L114 36 L122 48 L130 28 L138 50 L146 42 L154 46 L162 34 L170 52 L178 40 L186 44 L198 40" fill="none" stroke="var(--wave)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" />
-              </svg>
-              <div class="status ${p.status === "loaded" ? "loaded" : p.isPlaying ? "playing" : "idle"}">
-                <span class="dot"></span>
-                <span>${p.status || (p.isPlaying ? "playing" : "idle")}</span>
-              </div>
-              <div class="file-label">${p.fileName || "No file loaded"}</div>
-            </div>
-          </div>
-          <div class="range">
-            <span class="label">MIDI NOTE RANGE</span>
-            <div class="range-pill">
-              <input type="number" min="0" max="127" class="num-input start-note" value="${p.midiLow}">
-              <span class="arrow">▶</span>
-              <input type="number" min="0" max="127" class="num-input end-note" value="${p.midiHigh}">
-            </div>
-          </div>
-          <div class="gain">
-            <span class="label">GAIN</span>
-            <div class="gain-row">
-              <div class="knob" aria-hidden="true"></div>
-              <div class="meter">
-                <div class="fill" style="height: ${Math.min(100, Math.max(4, p.gain * 100))}%"></div>
-              </div>
-            </div>
-          </div>
-        `;
-
-          playersEl.appendChild(section);
+        let refs = playerEls.get(p.id);
+        if (!refs) {
+          refs = createPlayerElement(p);
+          playerEls.set(p.id, refs);
+          playersEl.appendChild(refs.section);
+        }
+        updatePlayerElement(refs, p);
+        seen.add(p.id);
       });
 
-      playersEl.querySelectorAll(".load-btn").forEach((btn) => {
-        btn.addEventListener("click", async (e) => {
-          const id = e.currentTarget.getAttribute("data-id");
-          try {
-            await fetch(`/loadSample?id=${id}`, { method: "POST" });
-          } catch (err) {
-            console.error("Load request failed", err);
-          }
-        });
-      });
+      for (const [id, refs] of playerEls.entries()) {
+        if (!seen.has(id)) {
+          playersEl.removeChild(refs.section);
+          playerEls.delete(id);
+          vuNeedles.delete(id);
+          lastVuAngles.delete(id);
+        }
+      }
 
-      playersEl.querySelectorAll(".trigger-btn").forEach((btn) => {
-        btn.addEventListener("click", async (e) => {
-          const id = e.currentTarget.getAttribute("data-id");
-          try {
-            await fetch(`/trigger?id=${id}`, { method: "POST" });
-          } catch (err) {
-            console.error("Trigger request failed", err);
-          }
-        });
-      });
-
-      playersEl.querySelectorAll(".range-pill").forEach((pill) => {
-        const start = pill.querySelector(".start-note");
-        const end = pill.querySelector(".end-note");
-        const playerId = pill.closest(".player")?.querySelector(".load-btn")?.getAttribute("data-id");
-
-        const clamp = (v) => Math.min(127, Math.max(0, v));
-
-        const pushUpdate = async (low, high) => {
-          try {
-            await fetch(`/setRange?id=${playerId}&low=${low}&high=${high}`, { method: "POST" });
-          } catch (err) {
-            console.error("Failed to set range", err);
-          }
-        };
-
-        const commit = () => {
-          let low = clamp(parseInt(start.value, 10) || 0);
-          let high = clamp(parseInt(end.value, 10) || 0);
-          if (low > high) high = low;
-          if (high < low) low = high;
-          start.value = low;
-          end.value = high;
-          pushUpdate(low, high);
-        };
-
-        const maybeCommitOnEnter = (ev) => {
-          if (ev.key === "Enter") {
-            ev.preventDefault();
-            ev.currentTarget.blur();
-          }
-        };
-
-        start?.addEventListener("blur", commit);
-        end?.addEventListener("blur", commit);
-        start?.addEventListener("keydown", maybeCommitOnEnter);
-        end?.addEventListener("keydown", maybeCommitOnEnter);
-      });
+      const anyPlaying = state.players.some((p) => p.isPlaying);
+      document.body.classList.toggle("playing", anyPlaying);
     }
 
     function handleCppMessage(data) {
@@ -490,12 +627,44 @@
       }
     }
 
+    async function fetchVu() {
+      try {
+        const res = await fetch("/vuState");
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const json = await res.json();
+        const values = json?.dB_out || [];
+        values.forEach((vu, idx) => {
+          const player = state.players[idx];
+          if (!player) return;
+          const needle = vuNeedles.get(player.id);
+          if (!needle) return;
+          const deg = vuDbToDeg(vu);
+          const last = lastVuAngles.get(player.id);
+          if (last !== undefined && Math.abs(last - deg) < 0.25) return;
+          lastVuAngles.set(player.id, deg);
+          needle.style.transform = `translate(-50%, 0) rotate(${deg}deg)`;
+        });
+      } catch (err) {
+        console.error("Failed to fetch VU data", err);
+      }
+    }
+
+    function startVuPolling(rate) {
+      if (vuTimer) clearInterval(vuTimer);
+      const clampedRate = Math.min(rate || 10, 20);
+      const intervalMs = Math.max(40, Math.floor(1000 / clampedRate));
+      vuTimer = setInterval(fetchVu, intervalMs);
+    }
+
     async function fetchInitialState() {
       try {
         const res = await fetch("/state");
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const json = await res.json();
-        handleCppMessage(json);
+        if (json?.players) {
+            state.players = json.players;
+            renderPlayers();
+        }
       } catch (err) {
         console.error("Failed to fetch initial state", err);
         renderPlayers();
@@ -503,6 +672,7 @@
     }
 
     fetchInitialState();
+    startVuPolling(10);
   </script>
 </body>
 </html>

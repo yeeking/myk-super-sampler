@@ -21,6 +21,8 @@ public:
     bool setMidiRange (int playerId, int low, int high);
     bool setGain (int playerId, float gain);
     bool trigger (int playerId);
+    juce::String getWaveformSVG (int playerId) const;
+    std::shared_ptr<std::string> getVuJson() const;
 
     juce::ValueTree exportToValueTree() const;
     void importFromValueTree (const juce::ValueTree& tree);
@@ -33,4 +35,6 @@ private:
     mutable std::mutex playerMutex;
     int nextId { 1 };
     juce::AudioFormatManager formatManager;
+    std::string vuJson;
+    mutable juce::SpinLock vuLock;
 };

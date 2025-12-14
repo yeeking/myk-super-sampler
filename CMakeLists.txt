@@ -45,6 +45,7 @@ target_sources(webui-example
         ./src/HTTPServer.cpp
         ./src/SamplePlayer.cpp
         ./src/SamplerEngine.cpp
+        ./src/WaveformSVGRenderer.cpp
         )
 
         

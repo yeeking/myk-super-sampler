@@ -56,6 +56,8 @@ public:
     void sendSamplerStateToUI();
     void requestSampleLoadFromWeb (int playerId);
     juce::var getSamplerState() const;
+    juce::String getWaveformSVGForPlayer (int playerId) const;
+    std::string getVuStateJson() const;
     void setSampleRangeFromWeb (int playerId, int low, int high);
     void triggerFromWeb (int playerId);
 
@@ -63,6 +65,7 @@ private:
     HttpServerThread apiServer;
     SamplerEngine sampler;
     juce::AudioProcessorValueTreeState apvts;
+    juce::File lastSampleDirectory;
 
     static juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout();
 

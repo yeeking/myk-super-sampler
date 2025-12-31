@@ -37,6 +37,7 @@ public:
     bool setLoadedBuffer (juce::AudioBuffer<float>&& newBuffer, const juce::String& name);
     void markError (const juce::String& path, const juce::String& message);
     juce::String getWaveformSVG() const noexcept { return state.waveformSVG; }
+    const std::vector<float>& getWaveformPoints() const noexcept { return waveformPoints; }
     void beginBlock() noexcept;
     void endBlock() noexcept;
     float getLastVuDb() const noexcept { return lastVuDb; }
@@ -52,4 +53,5 @@ private:
     float vuSum { 0.0f };
     int vuBufferSize { 1024 };
     float lastVuDb { -60.0f };
+    std::vector<float> waveformPoints;
 };

@@ -1,11 +1,75 @@
 #include "SamplePlayer.h"
 #include "WaveformSVGRenderer.h"
+#include <algorithm>
+#include <limits>
+
+namespace
+{
+constexpr int kWaveformPlotPoints = 128;
+
+std::vector<float> buildWaveformPoints(const juce::AudioBuffer<float>& buffer, int numPoints)
+{
+    std::vector<float> points;
+    if (numPoints < 2)
+        numPoints = 2;
+
+    points.reserve(static_cast<size_t>(numPoints) * 2);
+
+    if (buffer.getNumSamples() == 0 || buffer.getNumChannels() == 0)
+    {
+        for (int i = 0; i < numPoints; ++i)
+        {
+            points.push_back(0.0f);
+            points.push_back(0.0f);
+        }
+        return points;
+    }
+
+    const int totalSamples = buffer.getNumSamples();
+    const int samplesPerPoint = std::max(1, totalSamples / numPoints);
+
+    for (int start = 0; start < totalSamples; start += samplesPerPoint)
+    {
+        const int end = std::min(totalSamples, start + samplesPerPoint);
+        float localMin = std::numeric_limits<float>::max();
+        float localMax = std::numeric_limits<float>::lowest();
+
+        for (int chan = 0; chan < buffer.getNumChannels(); ++chan)
+        {
+            const float* data = buffer.getReadPointer(chan);
+            for (int i = start; i < end; ++i)
+            {
+                const float sample = data[i];
+                localMin = std::min(localMin, sample);
+                localMax = std::max(localMax, sample);
+            }
+        }
+
+        if (localMin == std::numeric_limits<float>::max())
+            localMin = 0.0f;
+        if (localMax == std::numeric_limits<float>::lowest())
+            localMax = 0.0f;
+
+        points.push_back(localMin);
+        points.push_back(localMax);
+    }
+
+    if (points.size() < static_cast<size_t>(numPoints) * 2)
+    {
+        const size_t missing = static_cast<size_t>(numPoints) * 2 - points.size();
+        points.insert(points.end(), missing, 0.0f);
+    }
+
+    return points;
+}
+} // namespace
 
 SamplePlayer::SamplePlayer (int newId)
 {
     state.id = newId;
     state.waveformSVG = WaveformSVGRenderer::generateBlankWaveformSVG();
     vuBuffer.assign ((size_t) vuBufferSize, 0.0f);
+    waveformPoints = buildWaveformPoints(sampleBuffer, kWaveformPlotPoints);
 }
 
 void SamplePlayer::setMidiRange (int low, int high) noexcept
@@ -90,6 +154,7 @@ bool SamplePlayer::setLoadedBuffer (juce::AudioBuffer<float>&& newBuffer, const 
     playHead = 0;
     state.isPlaying = false;
     state.waveformSVG = WaveformSVGRenderer::generateWaveformSVG (sampleBuffer, 320);
+    waveformPoints = buildWaveformPoints(sampleBuffer, kWaveformPlotPoints);
     vuBuffer.assign ((size_t) vuBufferSize, 0.0f);
     vuWritePos = 0;
     vuSum = 0.0f;
@@ -104,6 +169,7 @@ void SamplePlayer::markError (const juce::String& path, const juce::String& mess
     state.filePath = path;
     state.fileName = message.isNotEmpty() ? message : juce::File (path).getFileName();
     state.waveformSVG = WaveformSVGRenderer::generateBlankWaveformSVG();
+    waveformPoints = buildWaveformPoints(sampleBuffer, kWaveformPlotPoints);
     vuBuffer.assign ((size_t) vuBufferSize, 0.0f);
     vuWritePos = 0;
     vuSum = 0.0f;

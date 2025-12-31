@@ -268,6 +268,14 @@ void PluginProcessor::triggerFromWeb (int playerId)
     sampler.trigger(playerId);
 }
 
+void PluginProcessor::setGainFromUI (int playerId, float gain)
+{
+    if (sampler.setGain (playerId, gain))
+        sendSamplerStateToUI();
+    else
+        broadcastMessage ("Failed to set gain for player " + juce::String (playerId));
+}
+
 void PluginProcessor::sendSamplerStateToUI()
 {
     DBG("sendSamplerStateToUI");
@@ -287,6 +295,11 @@ juce::var PluginProcessor::getSamplerState() const
 juce::String PluginProcessor::getWaveformSVGForPlayer (int playerId) const
 {
     return sampler.getWaveformSVG (playerId);
+}
+
+std::vector<float> PluginProcessor::getWaveformPointsForPlayer (int playerId) const
+{
+    return sampler.getWaveformPoints (playerId);
 }
 
 std::string PluginProcessor::getVuStateJson() const

@@ -63,6 +63,7 @@ target_link_libraries(webui-example
 PRIVATE
     AudioPluginData           # If we'd created a binary data target, we'd link to it here
     juce::juce_audio_utils
+    juce::juce_opengl
     juce::juce_gui_extra  
 
 PUBLIC

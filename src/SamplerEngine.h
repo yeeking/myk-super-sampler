@@ -22,6 +22,7 @@ public:
     bool setGain (int playerId, float gain);
     bool trigger (int playerId);
     juce::String getWaveformSVG (int playerId) const;
+    std::vector<float> getWaveformPoints (int playerId) const;
     std::shared_ptr<std::string> getVuJson() const;
 
     juce::ValueTree exportToValueTree() const;

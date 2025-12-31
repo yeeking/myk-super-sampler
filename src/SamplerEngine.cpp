@@ -222,6 +222,15 @@ juce::String SamplerEngine::getWaveformSVG (int playerId) const
     return WaveformSVGRenderer::generateBlankWaveformSVG();
 }
 
+std::vector<float> SamplerEngine::getWaveformPoints (int playerId) const
+{
+    const std::lock_guard<std::mutex> lock (playerMutex);
+    if (auto* player = getPlayer (playerId))
+        return player->getWaveformPoints();
+
+    return {};
+}
+
 std::shared_ptr<std::string> SamplerEngine::getVuJson() const
 {
     const juce::SpinLock::ScopedLockType guard (vuLock);

@@ -1,6 +1,7 @@
 #pragma once
 // #include <juce_audio_processors/juce_audio_processors.h>
 #include <JuceHeader.h>
+#include <vector>
 
 
 // #define CPPHTTPLIB_OPENSSL_SUPPORT
@@ -57,9 +58,11 @@ public:
     void requestSampleLoadFromWeb (int playerId);
     juce::var getSamplerState() const;
     juce::String getWaveformSVGForPlayer (int playerId) const;
+    std::vector<float> getWaveformPointsForPlayer (int playerId) const;
     std::string getVuStateJson() const;
     void setSampleRangeFromWeb (int playerId, int low, int high);
     void triggerFromWeb (int playerId);
+    void setGainFromUI (int playerId, float gain);
 
 private:
     HttpServerThread apiServer;

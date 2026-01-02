@@ -26,6 +26,9 @@ public:
     void newOpenGLContextCreated() override;
     void renderOpenGL() override;
     void openGLContextClosing() override;
+    void mouseWheelMove (const juce::MouseEvent& event, const juce::MouseWheelDetails& wheel) override;
+    void mouseDown (const juce::MouseEvent& event) override;
+    void mouseDrag (const juce::MouseEvent& event) override;
 
     using juce::Component::keyPressed;
     bool keyPressed (const juce::KeyPress& key, juce::Component* originatingComponent) override;
@@ -179,12 +182,14 @@ private:
     float zoomLevel = 1.0f;
     float panOffsetX = 0.0f;
     float panOffsetY = 0.0f;
+    juce::Point<int> lastDragPosition;
 
     void refreshFromProcessor();
     void refreshFromPayload(const juce::var& payload);
     void rebuildCellLayout();
     void rebuildTextMeshes();
     void updateWaveformMesh(int playerId, const std::vector<float>& points);
+    void adjustZoom(float delta);
 
     void handleAction(const CellInfo& info);
     void adjustEditValue(int direction);

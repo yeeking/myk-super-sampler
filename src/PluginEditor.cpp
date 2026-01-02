@@ -184,7 +184,9 @@ PluginEditor::PluginEditor (PluginProcessor& p)
 
     openGLContext.setRenderer(this);
     openGLContext.setContinuousRepainting(false);
-    openGLContext.setComponentPaintingEnabled(true);
+    // this will stop it from rendering the JUCE layer
+    // set to true if you want to draw juce components into the opengl space
+    openGLContext.setComponentPaintingEnabled(false);
     openGLContext.attachTo(*this);
 
     setSize (980, 640);
@@ -221,6 +223,49 @@ void PluginEditor::updateUIFromProcessor(const juce::var& payload)
     const std::lock_guard<std::mutex> lock(stateMutex);
     pendingPayload = payload;
     pendingPayloadReady = true;
+}
+
+void PluginEditor::adjustZoom(float delta)
+{
+    const float minZoom = 0.5f;
+    const float maxZoom = 2.5f;
+    zoomLevel = juce::jlimit(minZoom, maxZoom, zoomLevel + delta);
+}
+
+void PluginEditor::mouseWheelMove (const juce::MouseEvent& event, const juce::MouseWheelDetails& wheel)
+{
+    if (!getLocalBounds().contains(event.getPosition()))
+        return;
+
+    const float zoomDelta = wheel.deltaY * 0.4f;
+    if (std::abs(zoomDelta) < 0.0001f)
+        return;
+
+    const std::lock_guard<std::mutex> lock(uiMutex);
+    adjustZoom(zoomDelta);
+}
+
+void PluginEditor::mouseDown (const juce::MouseEvent& event)
+{
+    if (!getLocalBounds().contains(event.getPosition()))
+        return;
+
+    lastDragPosition = event.getPosition();
+}
+
+void PluginEditor::mouseDrag (const juce::MouseEvent& event)
+{
+    if (!getLocalBounds().contains(event.getPosition()))
+        return;
+
+    const auto currentPos = event.getPosition();
+    const auto delta = currentPos - lastDragPosition;
+    lastDragPosition = currentPos;
+
+    const std::lock_guard<std::mutex> lock(uiMutex);
+    const float panScale = 0.02f / zoomLevel;
+    panOffsetX += static_cast<float>(delta.x) * panScale;
+    panOffsetY -= static_cast<float>(delta.y) * panScale;
 }
 
 void PluginEditor::refreshFromProcessor()
@@ -520,7 +565,16 @@ void PluginEditor::renderOpenGL()
 
     const auto background = palette.background;
     glClearColor(background.getFloatRed(), background.getFloatGreen(), background.getFloatBlue(), 1.0f);
+    // glClearColor(0.5f,0.5f,0.5f, 1.0f);
+    
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glEnable(GL_DEPTH_TEST);
+    glDepthFunc(GL_LESS);
+    glDepthMask(GL_TRUE);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glEnable(GL_CULL_FACE);
+    glCullFace(GL_BACK);
 
     const float aspectRatio = getWidth() > 0 ? (float)getWidth() / (float)getHeight() : 1.0f;
     const auto projectionMatrix = getProjectionMatrix(aspectRatio);
@@ -662,7 +716,7 @@ void PluginEditor::renderOpenGL()
             flatShaderUniforms->viewMatrix->setMatrix4(viewMatrix.mat, 1, GL_FALSE);
         if (flatShaderAttributes->position)
             openGLContext.extensions.glEnableVertexAttribArray(flatShaderAttributes->position->attributeID);
-
+        // draw box contents 
         for (size_t row = 0; row < cellStates[0].size(); ++row)
         {
             float cursorX = startX;
@@ -727,8 +781,9 @@ void PluginEditor::renderOpenGL()
                                                                            reinterpret_cast<GLvoid*>(static_cast<uintptr_t>(offsetof(Segment14Geometry::Vertex, x))));
                 glDrawElements(GL_TRIANGLES, meshIt->second.indexCount, GL_UNSIGNED_INT, nullptr);
             }
-        }
+        }// end of main drawing block for box contents
 
+        
         for (size_t row = 1; row < cellStates[0].size(); ++row)
         {
             const auto& player = players[row - 1];
@@ -785,9 +840,10 @@ void PluginEditor::renderOpenGL()
                                                                sizeof(float) * 3,
                                                                nullptr);
 
-            glLineWidth(1.3f);
+            glLineWidth(1.4f);
             glDrawArrays(GL_LINE_STRIP, GLint{0}, meshIt->second.vertexCount);
         }
+        
 
         if (flatShaderAttributes->position)
             openGLContext.extensions.glDisableVertexAttribArray(flatShaderAttributes->position->attributeID);
@@ -797,6 +853,8 @@ void PluginEditor::renderOpenGL()
     openGLContext.extensions.glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, GLuint{0});
     openGLContext.extensions.glUseProgram(GLuint{0});
     glDisable(GL_SCISSOR_TEST);
+    // glDisable(GL_CULL_FACE);
+    // glDisable(GL_DEPTH_TEST);
 }
 
 void PluginEditor::openGLContextClosing()
@@ -986,7 +1044,7 @@ void PluginEditor::updateWaveformMesh(int playerId, const std::vector<float>& po
         return;
 
     std::vector<float> vertices;
-    vertices.reserve(pointCount * 2 * 3);
+    vertices.reserve(pointCount * 3);
 
     const float width = 1.0f;
     const float height = 1.0f;
@@ -997,25 +1055,15 @@ void PluginEditor::updateWaveformMesh(int playerId, const std::vector<float>& po
     {
         const float t = static_cast<float>(i) / static_cast<float>(pointCount - 1);
         const float x = -halfW + t * width;
-        const float y = juce::jlimit(-1.0f, 1.0f, points[i * 2 + 1]) * halfH;
+        const float yMax = juce::jlimit(-1.0f, 1.0f, points[i * 2 + 1]) * halfH;
         vertices.push_back(x);
-        vertices.push_back(y);
-        vertices.push_back(0.0f);
-    }
-
-    for (size_t i = pointCount; i-- > 0;)
-    {
-        const float t = static_cast<float>(i) / static_cast<float>(pointCount - 1);
-        const float x = -halfW + t * width;
-        const float y = juce::jlimit(-1.0f, 1.0f, points[i * 2]) * halfH;
-        vertices.push_back(x);
-        vertices.push_back(y);
+        vertices.push_back(yMax);
         vertices.push_back(0.0f);
     }
 
     auto& mesh = waveformMeshes[playerId];
     mesh.vertexCount = static_cast<GLsizei>(vertices.size() / 3);
-    mesh.pointCount = points.size();
+    mesh.pointCount = pointCount;
 
     if (mesh.vbo == 0)
         openGLContext.extensions.glGenBuffers(1, &mesh.vbo);

@@ -17,7 +17,7 @@ add_subdirectory(libs/JUCE)                    # If you've put JUCE in a subdire
 juce_add_plugin(myk-super-sampler
   PLUGIN_MANUFACTURER_CODE Mjyk               # A four-character manufacturer id with at least one upper-case character
     PLUGIN_CODE SSa0                            # A unique four-character plugin id with exactly one upper-case character
-    COPY_PLUGIN_AFTER_BUILD TRUE                                           # GarageBand 10.3 requires the first letter to be upper-case, and the remaining letters to be lower-case
+    COPY_PLUGIN_AFTER_BUILD FALSE                                          # GarageBand 10.3 requires the first letter to be upper-case, and the remaining letters to be lower-case
     IS_SYNTH TRUE
     IS_MIDI_EFFECT FALSE
     NEEDS_MIDI_INPUT TRUE
@@ -45,6 +45,7 @@ target_sources(myk-super-sampler
         # ./src/HTTPServer.cpp
         ./src/SamplePlayer.cpp
         ./src/SamplerEngine.cpp
+        ./src/TrackerUIComponent.cpp
         ./src/WaveformSVGRenderer.cpp
         )
 

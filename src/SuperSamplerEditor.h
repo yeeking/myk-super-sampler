@@ -1,12 +1,9 @@
 #pragma once
 
 #include "SuperSamplerProcessor.h"
-#include "Segment14Geometry.h"
+#include "TrackerUIComponent.h"
 #include <JuceHeader.h>
-#include <atomic>
 #include <mutex>
-#include <unordered_map>
-#include <unordered_set>
 #include <vector>
 
 class SuperSamplerEditor final : public juce::AudioProcessorEditor,
@@ -76,54 +73,6 @@ private:
         int playerIndex = -1;
     };
 
-    struct ShaderAttributes
-    {
-        std::unique_ptr<juce::OpenGLShaderProgram::Attribute> position;
-        std::unique_ptr<juce::OpenGLShaderProgram::Attribute> normal;
-    };
-
-    struct ShaderUniforms
-    {
-        std::unique_ptr<juce::OpenGLShaderProgram::Uniform> projectionMatrix;
-        std::unique_ptr<juce::OpenGLShaderProgram::Uniform> viewMatrix;
-        std::unique_ptr<juce::OpenGLShaderProgram::Uniform> modelMatrix;
-        std::unique_ptr<juce::OpenGLShaderProgram::Uniform> cellColor;
-        std::unique_ptr<juce::OpenGLShaderProgram::Uniform> cellGlow;
-        std::unique_ptr<juce::OpenGLShaderProgram::Uniform> lightDirection;
-        std::unique_ptr<juce::OpenGLShaderProgram::Uniform> lightColor;
-        std::unique_ptr<juce::OpenGLShaderProgram::Uniform> ambientStrength;
-        std::unique_ptr<juce::OpenGLShaderProgram::Uniform> glowColor;
-    };
-
-    struct FlatShaderAttributes
-    {
-        std::unique_ptr<juce::OpenGLShaderProgram::Attribute> position;
-    };
-
-    struct FlatShaderUniforms
-    {
-        std::unique_ptr<juce::OpenGLShaderProgram::Uniform> projectionMatrix;
-        std::unique_ptr<juce::OpenGLShaderProgram::Uniform> viewMatrix;
-        std::unique_ptr<juce::OpenGLShaderProgram::Uniform> modelMatrix;
-        std::unique_ptr<juce::OpenGLShaderProgram::Uniform> color;
-        std::unique_ptr<juce::OpenGLShaderProgram::Uniform> glowStrength;
-        std::unique_ptr<juce::OpenGLShaderProgram::Uniform> glowColor;
-    };
-
-    struct TextMesh
-    {
-        GLuint vbo = 0;
-        GLuint ibo = 0;
-        GLsizei indexCount = 0;
-    };
-
-    struct WaveformMesh
-    {
-        GLuint vbo = 0;
-        GLsizei vertexCount = 0;
-        size_t pointCount = 0;
-    };
-
     struct Palette
     {
         juce::Colour background;
@@ -142,36 +91,19 @@ private:
     SuperSamplerProcessor& processorRef;
 
     juce::OpenGLContext openGLContext;
-    std::unique_ptr<juce::OpenGLShaderProgram> shaderProgram;
-    std::unique_ptr<ShaderAttributes> shaderAttributes;
-    std::unique_ptr<ShaderUniforms> shaderUniforms;
-    std::unique_ptr<juce::OpenGLShaderProgram> flatShaderProgram;
-    std::unique_ptr<FlatShaderAttributes> flatShaderAttributes;
-    std::unique_ptr<FlatShaderUniforms> flatShaderUniforms;
-
-    std::unordered_map<std::string, TextMesh> textMeshCache;
-    std::unordered_map<int, WaveformMesh> waveformMeshes;
-    std::unordered_set<int> dirtyWaveforms;
-
-    Segment14Geometry::Params textGeomParams{};
-    Segment14Geometry textGeometry{ textGeomParams };
-
-    GLuint vertexBuffer = 0;
-    GLuint indexBuffer = 0;
-    GLuint edgeIndexBuffer = 0;
+    TrackerUIComponent uiComponent;
 
     Palette palette{};
 
     std::vector<PlayerUIState> players;
-    std::vector<std::vector<CellVisualState>> cellStates;
-    std::vector<std::vector<std::string>> cellText;
+    std::vector<std::vector<CellVisualState>> cellVisualStates;
+    TrackerUIComponent::CellGrid cellStates;
     std::vector<std::vector<CellInfo>> cellInfo;
 
     std::mutex uiMutex;
     std::mutex stateMutex;
     juce::var pendingPayload;
     bool pendingPayloadReady = false;
-    std::atomic<bool> textMeshesDirty { true };
 
     size_t cursorRow = 0;
     size_t cursorCol = 0;
@@ -183,27 +115,19 @@ private:
     float panOffsetX = 0.0f;
     float panOffsetY = 0.0f;
     juce::Point<int> lastDragPosition;
+    juce::Rectangle<int> gridBounds;
+    std::vector<float> columnWidthScales;
 
     void refreshFromProcessor();
     void refreshFromPayload(const juce::var& payload);
     void rebuildCellLayout();
-    void rebuildTextMeshes();
-    void updateWaveformMesh(int playerId, const std::vector<float>& points);
     void adjustZoom(float delta);
 
     void handleAction(const CellInfo& info);
     void adjustEditValue(int direction);
     void moveCursor(int deltaRow, int deltaCol);
 
-    juce::Matrix3D<float> getProjectionMatrix(float aspectRatio) const;
-    juce::Matrix3D<float> getViewMatrix() const;
-    juce::Matrix3D<float> getModelMatrix(juce::Vector3D<float> position, juce::Vector3D<float> scale) const;
-
     juce::Colour getCellColour(const CellVisualState& cell, const CellInfo& info) const;
     juce::Colour getTextColour(const CellVisualState& cell, const CellInfo& info) const;
     float getCellDepthScale(const CellVisualState& cell) const;
-
-    TextMesh& ensureTextMesh(const std::string& text);
-    void clearTextMeshes();
-    void clearWaveformMeshes();
 };

@@ -1,8 +1,8 @@
-#include "PluginProcessor.h"
-#include "PluginEditor.h"
+#include "SuperSamplerProcessor.h"
+#include "SuperSamplerEditor.h"
 
 //==============================================================================
-PluginProcessor::PluginProcessor()
+SuperSamplerProcessor::SuperSamplerProcessor()
      : AudioProcessor (BusesProperties()
                      #if ! JucePlugin_IsMidiEffect
                        .withOutput ("Output", juce::AudioChannelSet::stereo(), true)
@@ -15,23 +15,23 @@ PluginProcessor::PluginProcessor()
     // apiServer.startThread();  // Launch server in the background
 }
 
-PluginProcessor::~PluginProcessor()
+SuperSamplerProcessor::~SuperSamplerProcessor()
 {
     // apiServer.stopServer();
 }
 
-juce::AudioProcessorValueTreeState::ParameterLayout PluginProcessor::createParameterLayout()
+juce::AudioProcessorValueTreeState::ParameterLayout SuperSamplerProcessor::createParameterLayout()
 {
     return {};
 }
 
 //==============================================================================
-const juce::String PluginProcessor::getName() const
+const juce::String SuperSamplerProcessor::getName() const
 {
     return JucePlugin_Name;
 }
 
-bool PluginProcessor::acceptsMidi() const
+bool SuperSamplerProcessor::acceptsMidi() const
 {
    #if JucePlugin_WantsMidiInput
     return true;
@@ -40,7 +40,7 @@ bool PluginProcessor::acceptsMidi() const
    #endif
 }
 
-bool PluginProcessor::producesMidi() const
+bool SuperSamplerProcessor::producesMidi() const
 {
    #if JucePlugin_ProducesMidiOutput
     return true;
@@ -49,7 +49,7 @@ bool PluginProcessor::producesMidi() const
    #endif
 }
 
-bool PluginProcessor::isMidiEffect() const
+bool SuperSamplerProcessor::isMidiEffect() const
 {
    #if JucePlugin_IsMidiEffect
     return true;
@@ -58,53 +58,53 @@ bool PluginProcessor::isMidiEffect() const
    #endif
 }
 
-double PluginProcessor::getTailLengthSeconds() const
+double SuperSamplerProcessor::getTailLengthSeconds() const
 {
     return 0.0;
 }
 
-int PluginProcessor::getNumPrograms()
+int SuperSamplerProcessor::getNumPrograms()
 {
     return 1;   // NB: some hosts don't cope very well if you tell them there are 0 programs,
                 // so this should be at least 1, even if you're not really implementing programs.
 }
 
-int PluginProcessor::getCurrentProgram()
+int SuperSamplerProcessor::getCurrentProgram()
 {
     return 0;
 }
 
-void PluginProcessor::setCurrentProgram (int index)
+void SuperSamplerProcessor::setCurrentProgram (int index)
 {
     juce::ignoreUnused (index);
 }
 
-const juce::String PluginProcessor::getProgramName (int index)
+const juce::String SuperSamplerProcessor::getProgramName (int index)
 {
     juce::ignoreUnused (index);
     return {};
 }
 
-void PluginProcessor::changeProgramName (int index, const juce::String& newName)
+void SuperSamplerProcessor::changeProgramName (int index, const juce::String& newName)
 {
     juce::ignoreUnused (index, newName);
 }
 
 //==============================================================================
-void PluginProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
+void SuperSamplerProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
     // Use this method as the place to do any pre-playback
     // initialisation that you need..
     juce::ignoreUnused (sampleRate, samplesPerBlock);
 }
 
-void PluginProcessor::releaseResources()
+void SuperSamplerProcessor::releaseResources()
 {
     // When playback stops, you can use this as an opportunity to free up any
     // spare memory, etc.
 }
 
-bool PluginProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
+bool SuperSamplerProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
 {
   #if JucePlugin_IsMidiEffect
     juce::ignoreUnused (layouts);
@@ -128,7 +128,7 @@ bool PluginProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
   #endif
 }
 
-void PluginProcessor::processBlock (juce::AudioBuffer<float>& buffer,
+void SuperSamplerProcessor::processBlock (juce::AudioBuffer<float>& buffer,
                                               juce::MidiBuffer& midiMessages)
 {
     juce::ignoreUnused (midiMessages);
@@ -162,18 +162,18 @@ void PluginProcessor::processBlock (juce::AudioBuffer<float>& buffer,
 }
 
 //==============================================================================
-bool PluginProcessor::hasEditor() const
+bool SuperSamplerProcessor::hasEditor() const
 {
     return true; // (change this to false if you choose to not supply an editor)
 }
 
-juce::AudioProcessorEditor* PluginProcessor::createEditor()
+juce::AudioProcessorEditor* SuperSamplerProcessor::createEditor()
 {
-    return new PluginEditor (*this);
+    return new SuperSamplerEditor (*this);
 }
 
 //==============================================================================
-void PluginProcessor::getStateInformation (juce::MemoryBlock& destData)
+void SuperSamplerProcessor::getStateInformation (juce::MemoryBlock& destData)
 {
     juce::ValueTree state ("PluginState");
     state.addChild (apvts.copyState(), -1, nullptr);
@@ -183,7 +183,7 @@ void PluginProcessor::getStateInformation (juce::MemoryBlock& destData)
     state.writeToStream (stream);
 }
 
-void PluginProcessor::setStateInformation (const void* data, int sizeInBytes)
+void SuperSamplerProcessor::setStateInformation (const void* data, int sizeInBytes)
 {
     auto tree = juce::ValueTree::readFromData (data, (size_t) sizeInBytes);
 
@@ -205,24 +205,24 @@ void PluginProcessor::setStateInformation (const void* data, int sizeInBytes)
 // This creates new instances of the plugin..
 juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()
 {
-    return new PluginProcessor();
+    return new SuperSamplerProcessor();
 }
 
 
 
-void PluginProcessor::messageReceivedFromWebAPI(std::string msg)
+void SuperSamplerProcessor::messageReceivedFromWebAPI(std::string msg)
 {
     DBG("PluginProcess received a message " << msg);
     broadcastMessage ("Got your message " + msg);
 }
 
-void PluginProcessor::addSamplePlayerFromWeb()
+void SuperSamplerProcessor::addSamplePlayerFromWeb()
 {
     sampler.addSamplePlayer();
     sendSamplerStateToUI();
 }
 
-void PluginProcessor::requestSampleLoadFromWeb (int playerId)
+void SuperSamplerProcessor::requestSampleLoadFromWeb (int playerId)
 {
     auto chooser = std::make_shared<juce::FileChooser> ("Select an audio file",
                                                         lastSampleDirectory,
@@ -255,7 +255,7 @@ void PluginProcessor::requestSampleLoadFromWeb (int playerId)
     });
 }
 
-void PluginProcessor::setSampleRangeFromWeb (int playerId, int low, int high)
+void SuperSamplerProcessor::setSampleRangeFromWeb (int playerId, int low, int high)
 {
     if (sampler.setMidiRange (playerId, low, high))
         sendSamplerStateToUI();
@@ -263,12 +263,12 @@ void PluginProcessor::setSampleRangeFromWeb (int playerId, int low, int high)
         broadcastMessage ("Failed to set range for player " + juce::String (playerId));
 }
 
-void PluginProcessor::triggerFromWeb (int playerId)
+void SuperSamplerProcessor::triggerFromWeb (int playerId)
 {
     sampler.trigger(playerId);
 }
 
-void PluginProcessor::setGainFromUI (int playerId, float gain)
+void SuperSamplerProcessor::setGainFromUI (int playerId, float gain)
 {
     if (sampler.setGain (playerId, gain))
         sendSamplerStateToUI();
@@ -276,33 +276,33 @@ void PluginProcessor::setGainFromUI (int playerId, float gain)
         broadcastMessage ("Failed to set gain for player " + juce::String (playerId));
 }
 
-void PluginProcessor::sendSamplerStateToUI()
+void SuperSamplerProcessor::sendSamplerStateToUI()
 {
     DBG("sendSamplerStateToUI");
     auto payload = sampler.toVar();
     juce::MessageManager::callAsync ([this, payload]()
     {
-        if (auto* editor = dynamic_cast<PluginEditor*> (getActiveEditor()))
+        if (auto* editor = dynamic_cast<SuperSamplerEditor*> (getActiveEditor()))
             editor->updateUIFromProcessor (payload);
     });
 }
 
-juce::var PluginProcessor::getSamplerState() const
+juce::var SuperSamplerProcessor::getSamplerState() const
 {
     return sampler.toVar();
 }
 
-juce::String PluginProcessor::getWaveformSVGForPlayer (int playerId) const
+juce::String SuperSamplerProcessor::getWaveformSVGForPlayer (int playerId) const
 {
     return sampler.getWaveformSVG (playerId);
 }
 
-std::vector<float> PluginProcessor::getWaveformPointsForPlayer (int playerId) const
+std::vector<float> SuperSamplerProcessor::getWaveformPointsForPlayer (int playerId) const
 {
     return sampler.getWaveformPoints (playerId);
 }
 
-std::string PluginProcessor::getVuStateJson() const
+std::string SuperSamplerProcessor::getVuStateJson() const
 {
     auto ptr = sampler.getVuJson();
     if (ptr != nullptr)
@@ -311,7 +311,7 @@ std::string PluginProcessor::getVuStateJson() const
     return "{\"dB_out\":[]}";
 }
 
-void PluginProcessor::broadcastMessage (const juce::String& msg)
+void SuperSamplerProcessor::broadcastMessage (const juce::String& msg)
 {
     juce::DynamicObject::Ptr obj = new juce::DynamicObject();
     obj->setProperty ("msg", msg);
@@ -319,7 +319,7 @@ void PluginProcessor::broadcastMessage (const juce::String& msg)
 
     juce::MessageManager::callAsync ([this, payload]()
     {
-        if (auto* editor = dynamic_cast<PluginEditor*> (getActiveEditor()))
+        if (auto* editor = dynamic_cast<SuperSamplerEditor*> (getActiveEditor()))
             editor->updateUIFromProcessor (payload);
     });
 }

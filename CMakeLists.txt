@@ -40,8 +40,8 @@ endif()
 
 target_sources(myk-super-sampler
     PRIVATE
-        ./src/PluginEditor.cpp
-        ./src/PluginProcessor.cpp
+        ./src/SuperSamplerEditor.cpp
+        ./src/SuperSamplerProcessor.cpp
         # ./src/HTTPServer.cpp
         ./src/SamplePlayer.cpp
         ./src/SamplerEngine.cpp

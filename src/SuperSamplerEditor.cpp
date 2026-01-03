@@ -1,4 +1,4 @@
-#include "PluginEditor.h"
+#include "SuperSamplerEditor.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
@@ -159,7 +159,7 @@ std::string formatGain(float gain)
 }
 } // namespace
 
-PluginEditor::PluginEditor (PluginProcessor& p)
+SuperSamplerEditor::SuperSamplerEditor (SuperSamplerProcessor& p)
     : AudioProcessorEditor (&p),
       processorRef (p)
 {
@@ -198,41 +198,41 @@ PluginEditor::PluginEditor (PluginProcessor& p)
     refreshFromProcessor();
 }
 
-PluginEditor::~PluginEditor()
+SuperSamplerEditor::~SuperSamplerEditor()
 {
     openGLContext.detach();
 }
 
-void PluginEditor::paint (juce::Graphics& g)
+void SuperSamplerEditor::paint (juce::Graphics& g)
 {
     g.fillAll (palette.background);
 }
 
-void PluginEditor::resized()
+void SuperSamplerEditor::resized()
 {
 }
 
-void PluginEditor::timerCallback()
+void SuperSamplerEditor::timerCallback()
 {
     refreshFromProcessor();
     openGLContext.triggerRepaint();
 }
 
-void PluginEditor::updateUIFromProcessor(const juce::var& payload)
+void SuperSamplerEditor::updateUIFromProcessor(const juce::var& payload)
 {
     const std::lock_guard<std::mutex> lock(stateMutex);
     pendingPayload = payload;
     pendingPayloadReady = true;
 }
 
-void PluginEditor::adjustZoom(float delta)
+void SuperSamplerEditor::adjustZoom(float delta)
 {
     const float minZoom = 0.5f;
     const float maxZoom = 2.5f;
     zoomLevel = juce::jlimit(minZoom, maxZoom, zoomLevel + delta);
 }
 
-void PluginEditor::mouseWheelMove (const juce::MouseEvent& event, const juce::MouseWheelDetails& wheel)
+void SuperSamplerEditor::mouseWheelMove (const juce::MouseEvent& event, const juce::MouseWheelDetails& wheel)
 {
     if (!getLocalBounds().contains(event.getPosition()))
         return;
@@ -245,7 +245,7 @@ void PluginEditor::mouseWheelMove (const juce::MouseEvent& event, const juce::Mo
     adjustZoom(zoomDelta);
 }
 
-void PluginEditor::mouseDown (const juce::MouseEvent& event)
+void SuperSamplerEditor::mouseDown (const juce::MouseEvent& event)
 {
     if (!getLocalBounds().contains(event.getPosition()))
         return;
@@ -253,7 +253,7 @@ void PluginEditor::mouseDown (const juce::MouseEvent& event)
     lastDragPosition = event.getPosition();
 }
 
-void PluginEditor::mouseDrag (const juce::MouseEvent& event)
+void SuperSamplerEditor::mouseDrag (const juce::MouseEvent& event)
 {
     if (!getLocalBounds().contains(event.getPosition()))
         return;
@@ -268,7 +268,7 @@ void PluginEditor::mouseDrag (const juce::MouseEvent& event)
     panOffsetY -= static_cast<float>(delta.y) * panScale;
 }
 
-void PluginEditor::refreshFromProcessor()
+void SuperSamplerEditor::refreshFromProcessor()
 {
     juce::var payload;
     {
@@ -286,7 +286,7 @@ void PluginEditor::refreshFromProcessor()
     refreshFromPayload(payload);
 }
 
-void PluginEditor::refreshFromPayload(const juce::var& payload)
+void SuperSamplerEditor::refreshFromPayload(const juce::var& payload)
 {
     auto* obj = payload.getDynamicObject();
     if (obj == nullptr)
@@ -368,7 +368,7 @@ void PluginEditor::refreshFromPayload(const juce::var& payload)
         textMeshesDirty.store(true);
 }
 
-void PluginEditor::rebuildCellLayout()
+void SuperSamplerEditor::rebuildCellLayout()
 {
     const size_t rows = players.size() + 1;
     const size_t cols = 6;
@@ -450,7 +450,7 @@ void PluginEditor::rebuildCellLayout()
     textMeshesDirty.store(true);
 }
 
-void PluginEditor::rebuildTextMeshes()
+void SuperSamplerEditor::rebuildTextMeshes()
 {
     std::unordered_set<std::string> needed;
     for (const auto& col : cellText)
@@ -480,7 +480,7 @@ void PluginEditor::rebuildTextMeshes()
         ensureTextMesh(text);
 }
 
-void PluginEditor::newOpenGLContextCreated()
+void SuperSamplerEditor::newOpenGLContextCreated()
 {
     shaderProgram = std::make_unique<juce::OpenGLShaderProgram>(openGLContext);
     if (shaderProgram->addVertexShader(juce::OpenGLHelpers::translateVertexShaderToV3(vertexShaderSource))
@@ -551,7 +551,7 @@ void PluginEditor::newOpenGLContextCreated()
     textMeshesDirty.store(true);
 }
 
-void PluginEditor::renderOpenGL()
+void SuperSamplerEditor::renderOpenGL()
 {
     const std::lock_guard<std::mutex> lock(uiMutex);
 
@@ -857,7 +857,7 @@ void PluginEditor::renderOpenGL()
     // glDisable(GL_DEPTH_TEST);
 }
 
-void PluginEditor::openGLContextClosing()
+void SuperSamplerEditor::openGLContextClosing()
 {
     shaderAttributes.reset();
     shaderUniforms.reset();
@@ -888,7 +888,7 @@ void PluginEditor::openGLContextClosing()
     }
 }
 
-bool PluginEditor::keyPressed (const juce::KeyPress& key, juce::Component*)
+bool SuperSamplerEditor::keyPressed (const juce::KeyPress& key, juce::Component*)
 {
     if (editMode)
     {
@@ -944,7 +944,7 @@ bool PluginEditor::keyPressed (const juce::KeyPress& key, juce::Component*)
     return false;
 }
 
-void PluginEditor::handleAction(const CellInfo& info)
+void SuperSamplerEditor::handleAction(const CellInfo& info)
 {
     if (info.action == Action::None)
         return;
@@ -987,7 +987,7 @@ void PluginEditor::handleAction(const CellInfo& info)
     }
 }
 
-void PluginEditor::adjustEditValue(int direction)
+void SuperSamplerEditor::adjustEditValue(int direction)
 {
     PlayerUIState player;
     {
@@ -1013,7 +1013,7 @@ void PluginEditor::adjustEditValue(int direction)
     }
 }
 
-void PluginEditor::moveCursor(int deltaRow, int deltaCol)
+void SuperSamplerEditor::moveCursor(int deltaRow, int deltaCol)
 {
     const std::lock_guard<std::mutex> lock(uiMutex);
 
@@ -1034,7 +1034,7 @@ void PluginEditor::moveCursor(int deltaRow, int deltaCol)
     rebuildCellLayout();
 }
 
-void PluginEditor::updateWaveformMesh(int playerId, const std::vector<float>& points)
+void SuperSamplerEditor::updateWaveformMesh(int playerId, const std::vector<float>& points)
 {
     if (points.size() < 2)
         return;
@@ -1075,7 +1075,7 @@ void PluginEditor::updateWaveformMesh(int playerId, const std::vector<float>& po
                                           GL_STATIC_DRAW);
 }
 
-PluginEditor::TextMesh& PluginEditor::ensureTextMesh(const std::string& text)
+SuperSamplerEditor::TextMesh& SuperSamplerEditor::ensureTextMesh(const std::string& text)
 {
     auto& entry = textMeshCache[text];
     if (entry.indexCount > 0)
@@ -1103,7 +1103,7 @@ PluginEditor::TextMesh& PluginEditor::ensureTextMesh(const std::string& text)
     return entry;
 }
 
-void PluginEditor::clearTextMeshes()
+void SuperSamplerEditor::clearTextMeshes()
 {
     for (auto& entry : textMeshCache)
     {
@@ -1115,7 +1115,7 @@ void PluginEditor::clearTextMeshes()
     textMeshCache.clear();
 }
 
-void PluginEditor::clearWaveformMeshes()
+void SuperSamplerEditor::clearWaveformMeshes()
 {
     for (auto& entry : waveformMeshes)
     {
@@ -1125,7 +1125,7 @@ void PluginEditor::clearWaveformMeshes()
     waveformMeshes.clear();
 }
 
-juce::Matrix3D<float> PluginEditor::getProjectionMatrix(float aspectRatio) const
+juce::Matrix3D<float> SuperSamplerEditor::getProjectionMatrix(float aspectRatio) const
 {
     const float nearPlane = 6.0f;
     const float farPlane = 120.0f;
@@ -1137,19 +1137,19 @@ juce::Matrix3D<float> PluginEditor::getProjectionMatrix(float aspectRatio) const
                                               nearPlane, farPlane);
 }
 
-juce::Matrix3D<float> PluginEditor::getViewMatrix() const
+juce::Matrix3D<float> SuperSamplerEditor::getViewMatrix() const
 {
     const float baseDistance = 22.0f;
     const float cameraDistance = baseDistance / zoomLevel;
     return juce::Matrix3D<float>::fromTranslation({panOffsetX, panOffsetY, -cameraDistance});
 }
 
-juce::Matrix3D<float> PluginEditor::getModelMatrix(juce::Vector3D<float> position, juce::Vector3D<float> scale) const
+juce::Matrix3D<float> SuperSamplerEditor::getModelMatrix(juce::Vector3D<float> position, juce::Vector3D<float> scale) const
 {
     return juce::Matrix3D<float>::fromTranslation(position) * makeScaleMatrix(scale);
 }
 
-juce::Colour PluginEditor::getCellColour(const CellVisualState& cell, const CellInfo& info) const
+juce::Colour SuperSamplerEditor::getCellColour(const CellVisualState& cell, const CellInfo& info) const
 {
     if (cell.isDisabled)
         return palette.cellDisabled;
@@ -1162,7 +1162,7 @@ juce::Colour PluginEditor::getCellColour(const CellVisualState& cell, const Cell
     return palette.cellIdle;
 }
 
-juce::Colour PluginEditor::getTextColour(const CellVisualState& cell, const CellInfo& info) const
+juce::Colour SuperSamplerEditor::getTextColour(const CellVisualState& cell, const CellInfo& info) const
 {
     if (cell.isSelected)
         return palette.cellSelected;
@@ -1173,7 +1173,7 @@ juce::Colour PluginEditor::getTextColour(const CellVisualState& cell, const Cell
     return palette.textPrimary;
 }
 
-float PluginEditor::getCellDepthScale(const CellVisualState& cell) const
+float SuperSamplerEditor::getCellDepthScale(const CellVisualState& cell) const
 {
     if (cell.isEditing)
         return 1.05f;

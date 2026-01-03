@@ -10,12 +10,12 @@
 
 
 //==============================================================================
-class PluginProcessor final : public juce::AudioProcessor
+class SuperSamplerProcessor final : public juce::AudioProcessor
 {
 public:
     //==============================================================================
-    PluginProcessor();
-    ~PluginProcessor() override;
+    SuperSamplerProcessor();
+    ~SuperSamplerProcessor() override;
 
     //==============================================================================
     void prepareToPlay (double sampleRate, int samplesPerBlock) override;
@@ -65,7 +65,6 @@ public:
     void setGainFromUI (int playerId, float gain);
 
 private:
-    // HttpServerThread apiServer;
     SamplerEngine sampler;
     juce::AudioProcessorValueTreeState apvts;
     juce::File lastSampleDirectory;
@@ -75,5 +74,5 @@ private:
     void broadcastMessage (const juce::String& msg);
 
     //==============================================================================
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (PluginProcessor)
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (SuperSamplerProcessor)
 };

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "PluginProcessor.h"
+#include "SuperSamplerProcessor.h"
 #include "Segment14Geometry.h"
 #include <JuceHeader.h>
 #include <atomic>
@@ -9,14 +9,14 @@
 #include <unordered_set>
 #include <vector>
 
-class PluginEditor final : public juce::AudioProcessorEditor,
+class SuperSamplerEditor final : public juce::AudioProcessorEditor,
                            public juce::OpenGLRenderer,
                            public juce::Timer,
                            public juce::KeyListener
 {
 public:
-    explicit PluginEditor (PluginProcessor&);
-    ~PluginEditor() override;
+    explicit SuperSamplerEditor (SuperSamplerProcessor&);
+    ~SuperSamplerEditor() override;
 
     void paint (juce::Graphics&) override;
     void resized() override;
@@ -139,7 +139,7 @@ private:
         juce::Vector3D<float> lightDirection { 0.2f, 0.45f, 1.0f };
     };
 
-    PluginProcessor& processorRef;
+    SuperSamplerProcessor& processorRef;
 
     juce::OpenGLContext openGLContext;
     std::unique_ptr<juce::OpenGLShaderProgram> shaderProgram;

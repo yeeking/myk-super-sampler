@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.22)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-project(webui-example VERSION 0.0.1)
+project(myk-super-sampler VERSION 0.0.1)
 
 message(STATUS "CMAKE_CXX_COMPILER before juce: ${CMAKE_CXX_COMPILER}")
 
@@ -14,23 +14,23 @@ endif()
 
 add_subdirectory(libs/JUCE)                    # If you've put JUCE in a subdirectory called JUCE
 
-juce_add_plugin(webui-example
+juce_add_plugin(myk-super-sampler
   PLUGIN_MANUFACTURER_CODE Mjyk               # A four-character manufacturer id with at least one upper-case character
-    PLUGIN_CODE Dem0                            # A unique four-character plugin id with exactly one upper-case character
+    PLUGIN_CODE SSa0                            # A unique four-character plugin id with exactly one upper-case character
     COPY_PLUGIN_AFTER_BUILD TRUE                                           # GarageBand 10.3 requires the first letter to be upper-case, and the remaining letters to be lower-case
     IS_SYNTH TRUE
     IS_MIDI_EFFECT FALSE
     NEEDS_MIDI_INPUT TRUE
     NEEDS_MIDI_OUTPUT FALSE
     FORMATS AU VST3 Standalone                  # The formats to build. Other valid formats are: AAX Unity VST AU AUv3
-    PRODUCT_NAME "webui-example"
+    PRODUCT_NAME "myk-super-sampler"
     NEEDS_WEB_BROWSER TRUE
     NEEDS_WEBVIEW2 TRUE    )
 
-juce_generate_juce_header(webui-example)
+juce_generate_juce_header(myk-super-sampler)
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
-target_include_directories(webui-example
+target_include_directories(myk-super-sampler
     PRIVATE
       ${GTK3_INCLUDE_DIRS}  
       ${WEBKIT2_INCLUDE_DIRS}
@@ -38,18 +38,18 @@ target_include_directories(webui-example
 endif()
 
 
-target_sources(webui-example
+target_sources(myk-super-sampler
     PRIVATE
         ./src/PluginEditor.cpp
         ./src/PluginProcessor.cpp
-        ./src/HTTPServer.cpp
+        # ./src/HTTPServer.cpp
         ./src/SamplePlayer.cpp
         ./src/SamplerEngine.cpp
         ./src/WaveformSVGRenderer.cpp
         )
 
         
-target_compile_definitions(webui-example
+target_compile_definitions(myk-super-sampler
     PUBLIC
     # JUCE_WEB_BROWSER and JUCE_USE_CURL would be on by default, but you might not need them.
     JUCE_WEB_BROWSER=1  # If you remove this, add `NEEDS_WEB_BROWSER TRUE` to the `juce_add_plugin` call
@@ -57,11 +57,11 @@ target_compile_definitions(webui-example
     JUCE_VST3_CAN_REPLACE_VST2=0
 )
 
-juce_add_binary_data(AudioPluginData SOURCES src/ui/index.html)
+#juce_add_binary_data(AudioPluginData SOURCES src/ui/index.html)
 
-target_link_libraries(webui-example
+target_link_libraries(myk-super-sampler
 PRIVATE
-    AudioPluginData           # If we'd created a binary data target, we'd link to it here
+ #   AudioPluginData           # If we'd created a binary data target, we'd link to it here
     juce::juce_audio_utils
     juce::juce_opengl
     juce::juce_gui_extra  
@@ -71,15 +71,15 @@ PUBLIC
     juce::juce_recommended_lto_flags
     juce::juce_recommended_warning_flags)
 
-## copy the files for the ui from the src/ui folder into the built directory 
-add_custom_command(
-    TARGET webui-example POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:webui-example>/ui"
-    COMMAND ${CMAKE_COMMAND} -E copy_directory
-        "${CMAKE_SOURCE_DIR}/src/ui"
-        "$<TARGET_FILE_DIR:webui-example>/ui"
-    COMMENT "Copying UI files to output folder"
-)
+# ## copy the files for the ui from the src/ui folder into the built directory 
+# add_custom_command(
+#     TARGET myk-super-sampler POST_BUILD
+#     COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:myk-super-sampler>/ui"
+#     COMMAND ${CMAKE_COMMAND} -E copy_directory
+#         "${CMAKE_SOURCE_DIR}/src/ui"
+#         "$<TARGET_FILE_DIR:myk-super-sampler>/ui"
+#     COMMENT "Copying UI files to output folder"
+# )
 
 
 # set this to ON and the http server will serve the UI files from disk instead of memory
@@ -87,7 +87,7 @@ add_custom_command(
 set(LOCAL_WEBUI OFF) 
 
 if(LOCAL_WEBUI)
-    target_compile_definitions(webui-example PRIVATE LOCAL_WEBUI)
+    target_compile_definitions(myk-super-sampler PRIVATE LOCAL_WEBUI)
     message(STATUS "Serving UI from disk: LOCAL_WEBUI is ${LOCAL_WEBUI}")
 else()
     message(STATUS "Serving UI from memory: LOCAL_WEBUI is ${LOCAL_WEBUI}")   

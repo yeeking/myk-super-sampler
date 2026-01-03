@@ -5,7 +5,7 @@
 
 
 // #define CPPHTTPLIB_OPENSSL_SUPPORT
-#include "HTTPServer.h"
+// #include "HTTPServer.h"
 #include "SamplerEngine.h"
 
 
@@ -65,7 +65,7 @@ public:
     void setGainFromUI (int playerId, float gain);
 
 private:
-    HttpServerThread apiServer;
+    // HttpServerThread apiServer;
     SamplerEngine sampler;
     juce::AudioProcessorValueTreeState apvts;
     juce::File lastSampleDirectory;

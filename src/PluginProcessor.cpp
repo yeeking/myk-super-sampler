@@ -8,16 +8,16 @@ PluginProcessor::PluginProcessor()
                        .withOutput ("Output", juce::AudioChannelSet::stereo(), true)
                      #endif
                        ),
-       apiServer{*this},
+    //    apiServer{*this},
        apvts (*this, nullptr, "Params", createParameterLayout())
 {
 
-    apiServer.startThread();  // Launch server in the background
+    // apiServer.startThread();  // Launch server in the background
 }
 
 PluginProcessor::~PluginProcessor()
 {
-    apiServer.stopServer();
+    // apiServer.stopServer();
 }
 
 juce::AudioProcessorValueTreeState::ParameterLayout PluginProcessor::createParameterLayout()
